@@ -100,3 +100,8 @@ yarn.lock
 # OS Files
 ########################
 Thumbs.db
+
+########################
+# CREDENTIALS AND SENSITIVE FILES
+########################
+credentials/**

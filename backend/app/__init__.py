@@ -1,7 +1,5 @@
-from fastapi import FastAPI
+"""
+Backend API for AlgoSensei Platform
+"""
 
-app = FastAPI()
-
-@app.get("/")
-async def main():
-    return {"message": "Hello, World!"}
+__version__ = "0.1.0"
