@@ -1,12 +1,11 @@
+import time
+import logging
+from sqlalchemy import text
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from sqlalchemy import text
-import logging
-
-from app.config.log import setup_logging
-setup_logging()
-
-from app.config.database import engine
+from fastapi.requests import Request
+from app.config.database import engine, Base
+from app.middlewares.cors import setup_cors
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +16,10 @@ async def lifespan(app: FastAPI):
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
         logger.info("✅ Database connection successful!")
+        
+        Base.metadata.create_all(bind=engine)
+        logger.info("📊 Database tables created/verified")
+        
     except Exception as e:
         logger.error(f"❌ Database connection failed: {e}")
         raise
@@ -32,6 +35,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+setup_cors(app)
+
 @app.get("/")
 async def root():
     """Health check endpoint."""
@@ -41,3 +46,11 @@ async def root():
 async def health():
     """Health check endpoint."""
     return {"status": "ok"}
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    processs_time = time.perf_counter() - start_time
+    response.headers["X-Process-Time"] = str(processs_time)
+    return response
