@@ -1,3 +1,5 @@
+"""Model definitions for authentication-related database tables."""
+
 from sqlalchemy import String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 

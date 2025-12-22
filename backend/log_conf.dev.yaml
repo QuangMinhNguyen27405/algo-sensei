@@ -8,7 +8,7 @@ formatters:
     use_colors: true
   access:
     "()": uvicorn.logging.AccessFormatter
-    format: '%(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s'
+    format: '%(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s %(relativeCreated)dms'
 
 handlers:
   default:

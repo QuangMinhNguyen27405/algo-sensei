@@ -59,11 +59,11 @@ inherit from this base class.
 """
 Base = declarative_base()
 
+"""
+Dependency that provides a database session for each request.
+Ensures that the session is properly closed after use.
+"""
 def get_db():
-    """
-    Dependency that provides a database session for each request.
-    Ensures that the session is properly closed after use.
-    """
     db = SessionLocal()
     try:
         yield db
