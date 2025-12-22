@@ -7,6 +7,7 @@ from app.config.log import setup_logging
 setup_logging()
 
 from app.config.database import engine
+from app.auth.router import router as auth_router
 
 logger = logging.getLogger(__name__)
 
