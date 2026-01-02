@@ -1,21 +1,14 @@
 {
-  "{{chrome}}.manifest_version": 3,
-  "{{firefox}}.manifest_version": 2,
+  "name": "Algo Sensei",
+  "version": "1.0.0",
+  "manifest_version": 3,
   "icons": {
-    "16": "icon/image.png",
-    "32": "icon/image.png",
-    "48": "icon/image.png",
-    "96": "icon/image.png",
-    "128": "icon/image.png"
-  },
-  "{{chrome}}.action": {
-    "default_popup": "src/index.html"
-  },
-  "{{firefox}}.browser_action": {
-    "default_popup": "src/index.html"
+    "16": "icons/image.png",
+    "48": "icons/image.png",
+    "128": "icons/image.png"
   },
   "background": {
-    "{{chrome}}.service_worker": "src/background.ts",
-    "{{firefox}}.scripts": ["src/background.js"]
-  }
+    "service_worker": "src/background.ts"
+  },
+  "permissions": ["sidePanel", "storage", "tabs", "activeTab", "scripting"]
 }
