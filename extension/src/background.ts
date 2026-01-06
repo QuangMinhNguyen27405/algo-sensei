@@ -14,8 +14,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, _, tab) => {
       path: "index.html",
       enabled: true,
     });
-    await chrome.sidePanel.open({ tabId });
-    console.log("Side panel opened for LeetCode");
   } else {
     await chrome.sidePanel.setOptions({
       tabId,

@@ -10,5 +10,15 @@
   "background": {
     "service_worker": "src/background.ts"
   },
-  "permissions": ["sidePanel", "storage", "tabs", "activeTab", "scripting"]
+  "permissions": ["sidePanel", "storage", "tabs", "scripting"],
+  "content_scripts": [
+    {
+      "js": ["src/content-scripts/leetcodeContent.ts"],
+      "matches": [
+        "https://*.leetcode.com/problems/*",
+        "https://leetcode.com/problems/*"
+      ],
+      "run_at": "document_end"
+    }
+  ]
 }
