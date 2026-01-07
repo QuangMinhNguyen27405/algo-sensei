@@ -1,0 +1,51 @@
+version: 1
+disable_existing_loggers: False
+
+formatters:
+  default:
+    "()": uvicorn.logging.DefaultFormatter
+    format: "%(levelprefix)s %(message)s"
+    use_colors: true
+  access:
+    "()": uvicorn.logging.AccessFormatter
+    format: '%(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s %(relativeCreated)dms'
+
+handlers:
+  default:
+    formatter: default
+    class: logging.StreamHandler
+    stream: ext://sys.stderr
+  access:
+    formatter: access
+    class: logging.StreamHandler
+    stream: ext://sys.stdout
+
+loggers:
+  uvicorn:
+    handlers:
+      - default
+    level: INFO
+    propagate: no
+  uvicorn.error:
+    level: INFO
+  uvicorn.access:
+    handlers:
+      - access
+    level: INFO
+    propagate: no
+  # Application loggers - unified with uvicorn format
+  app:
+    handlers:
+      - default
+    level: INFO
+    propagate: no
+  # Suppress verbose third-party loggers
+  google:
+    level: WARNING
+  urllib3:
+    level: WARNING
+
+root:
+  level: INFO
+  handlers:
+    - default

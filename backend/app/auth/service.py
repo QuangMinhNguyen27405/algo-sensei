@@ -7,7 +7,7 @@ from pwdlib import PasswordHash
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from app.config.settings import settings
-from app.utils.exceptions import AlreadyExistsException, UnauthorizedException
+from app.utils.exceptions import AlreadyExistsException, UnauthorizedException, InternalServerException
 from app.auth.schemas import UserCreateRequestSchema, UserLoginRequestSchema, UserChangePasswordRequestSchema
 from app.auth.repository import AuthRepository
 
@@ -80,6 +80,9 @@ class AuthService:
             hashed_password=hashed_password
         )
         
+        if user is None:
+            raise InternalServerException("Failed to create user.")
+        
         del user.password
         return user
     
@@ -94,6 +97,9 @@ class AuthService:
         
         new_hashed_password = self.get_password_hash(change_password_data.new_password)
         updated_user = self.authRepository.update_user(user_id, password=new_hashed_password)
+        
+        if updated_user is None:
+            raise InternalServerException("Failed to update password.")
         
         del updated_user.password
         return updated_user
@@ -114,7 +120,7 @@ class AuthService:
     def create_access_token(self, data: dict, expire_delta: timedelta | None = None) -> str:
         to_encode = data.copy()
         if expire_delta:
-            expire_delta = datetime.now(timezone.utc) + expire_delta
+            expire = datetime.now(timezone.utc) + expire_delta
         else:
             expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
         to_encode.update({"exp": expire})
