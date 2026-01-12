@@ -5,6 +5,10 @@
   "python.linting.pylintEnabled": true,
   "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
   "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "terminal.integrated.env.windows": {
+    "CONDA_AUTO_ACTIVATE_BASE": "false"
+  },
 
   // TypeScript/JavaScript configuration for /extension and /frontend
   "typescript.tsdk": "extension/node_modules/typescript/lib",

@@ -19,29 +19,16 @@ class AuthService:
         self.password_hash = PasswordHash.recommended()
         self.oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
         
+    async def get_user_by_id(self, user_id: int):
+        user = self.authRepository.get_user_by_id(user_id)
+        if user is None:
+            raise UnauthorizedException("User not found")
+        del user.password
+        return user
+        
     async def authenticate_user(self, token: str):
         user = await self.get_current_user(token)
         return user.id
-
-    async def get_current_user(self, token: str):
-        try:
-            payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-            user_id: str = payload.get("sub")
-            
-            if user_id is None:
-                raise UnauthorizedException("Could not validate credentials")
-            
-            user = self.authRepository.get_user_by_id(int(user_id))   
-            if user is None:
-                raise UnauthorizedException("Could not validate credentials")
-             
-            return user
-        
-        except ExpiredSignatureError:
-            raise UnauthorizedException("Token has expired")
-        
-        except InvalidTokenError:
-            raise UnauthorizedException("Invalid token")
 
     async def login_with_email_and_password(self, user_data: UserLoginRequestSchema):
         # Find user by email and/or username
@@ -106,11 +93,35 @@ class AuthService:
     
     async def delete_user(self, user_id):
         user = self.authRepository.delete_user(user_id)
+        if user is None:
+            raise InternalServerException("Failed to delete user.")
+        
+        del user.password
         return user
     
     """
     Helper Functions
     """
+    async def get_current_user(self, token: str):
+        try:
+            payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+            user_id: str = payload.get("sub")
+            
+            if user_id is None:
+                raise UnauthorizedException("Could not validate credentials")
+            
+            user = self.authRepository.get_user_by_id(int(user_id))   
+            if user is None:
+                raise UnauthorizedException("Could not validate credentials")
+                
+            return user
+        
+        except ExpiredSignatureError:
+            raise UnauthorizedException("Token has expired")
+        
+        except InvalidTokenError:
+            raise UnauthorizedException("Invalid token")
+    
     def get_password_hash(self, password: str) -> str: 
         return self.password_hash.hash(password)
     

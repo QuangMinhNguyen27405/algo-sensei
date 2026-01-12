@@ -8,6 +8,7 @@ from app.config.database import engine, Base
 from app.middlewares.cors import setup_cors
 from app.middlewares.authentication import AuthenticationMiddleware
 from app.auth.router import router as auth_router
+from app.agents.router import router as agent_router
 
 logger = logging.getLogger(__name__)
 
@@ -60,16 +61,13 @@ async def add_process_time_header(request: Request, call_next):
         status_color = "\033[91m"
     reset_color = "\033[0m"
     
-    logger.info(
-        f"{request.client.host} - {request.method} {request.url.path} - "
-        f"{status_color}{status_code}{reset_color} - "
-        f"{process_time:.4f}s"
-    )
+    client_host = request.client.host if request.client else "unknown"
     
     return response
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(agent_router)
 
 @app.get("/")
 async def root():
