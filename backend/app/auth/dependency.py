@@ -1,17 +1,23 @@
+from typing import Annotated
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from app.auth.repository import AuthRepository
 from app.auth.service import AuthService 
-from app.auth.user import User
 from app.config.database import get_db
+from app.config.settings import Settings, get_settings
 from app.utils.exceptions import UnauthorizedException
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
-def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
+def get_auth_repository(db: Annotated[Session, Depends(get_db)]):
+    """Dependency to get AuthRepository instance with a Database Session."""
+    return AuthRepository(db)
+
+def get_auth_service(settings: Annotated[Settings, Depends(get_settings)], authRepository: Annotated[AuthRepository, Depends(get_auth_repository)]) -> AuthService:
     """Dependency to get AuthService instance with a Database Session."""
-    authService = AuthService(db)
+    authService = AuthService(settings, authRepository)
     return authService
 
 def get_current_user_id(request: Request) -> int:

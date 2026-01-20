@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
-from app.config.settings import settings
+from app.config.settings import Settings, settings
 from app.utils.exceptions import AlreadyExistsException, UnauthorizedException, InternalServerException
 from app.auth.schemas import UserCreateRequestSchema, UserLoginRequestSchema, UserChangePasswordRequestSchema
 from app.auth.repository import AuthRepository
@@ -14,8 +14,9 @@ from app.auth.repository import AuthRepository
 
 class AuthService:
     
-    def __init__(self, db):
-        self.authRepository = AuthRepository(db)
+    def __init__(self, settings: Settings, authRepository: AuthRepository):
+        self.settings = settings
+        self.authRepository = authRepository
         self.password_hash = PasswordHash.recommended()
         self.oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
         
@@ -23,7 +24,6 @@ class AuthService:
         user = self.authRepository.get_user_by_id(user_id)
         if user is None:
             raise UnauthorizedException("User not found")
-        del user.password
         return user
         
     async def authenticate_user(self, token: str):
@@ -70,7 +70,6 @@ class AuthService:
         if user is None:
             raise InternalServerException("Failed to create user.")
         
-        del user.password
         return user
     
     async def logout_user(self, user_id):
@@ -78,6 +77,9 @@ class AuthService:
     
     async def change_password(self, user_id, change_password_data: UserChangePasswordRequestSchema):
         user = self.authRepository.get_user_by_id(user_id)
+        
+        if not user:
+            raise UnauthorizedException("User not found")
                 
         if not self.verify_password(change_password_data.old_password, user.password):
             raise UnauthorizedException("Old password is incorrect")
@@ -88,7 +90,6 @@ class AuthService:
         if updated_user is None:
             raise InternalServerException("Failed to update password.")
         
-        del updated_user.password
         return updated_user
     
     async def delete_user(self, user_id):
@@ -96,7 +97,6 @@ class AuthService:
         if user is None:
             raise InternalServerException("Failed to delete user.")
         
-        del user.password
         return user
     
     """

@@ -1,11 +1,9 @@
-import { Tabs } from "@/components/ui/tabs";
-import { Header } from "@/components/sidepanel/header";
 import { TabToggle } from "@/components/sidepanel/tabToggle";
-import { Home } from "@/components/sidepanel/tabs/home";
-import { Page } from "@/components/sidepanel/tabs/page";
+import { Chat } from "@/components/sidepanel/tabs/chat";
 import { Profile } from "@/components/sidepanel/tabs/profile";
-import { useSettings } from "@/hooks/use-settings";
 import { Settings } from "@/components/sidepanel/tabs/settings";
+import { Tabs } from "@/components/ui/tabs";
+import { useSettings } from "@/hooks/use-settings";
 
 const App = () => {
   const { ui, loading, updateUI } = useSettings();
@@ -26,8 +24,6 @@ const App = () => {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <Header />
-      {/* Content */}
       <div className="flex-1 overflow-hidden">
         <Tabs
           value={ui.activeTab}
@@ -35,9 +31,7 @@ const App = () => {
           className="h-full flex flex-col gap-0">
           <TabToggle />
 
-          <Home />
-          <Page />
-
+          <Chat />
           <Profile />
           <Settings />
         </Tabs>

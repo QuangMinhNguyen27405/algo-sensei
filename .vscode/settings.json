@@ -1,9 +1,8 @@
 {
   // Python configuration for /backend (FastAPI)
   "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
-  "python.linting.enabled": true,
-  "python.linting.pylintEnabled": true,
   "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
+  "python.analysis.typeCheckingMode": "strict",
   "python.terminal.activateEnvironment": true,
   "python.terminal.activateEnvInCurrentTerminal": true,
   "terminal.integrated.env.windows": {
@@ -21,7 +20,7 @@
     "**/*.pyc": true,
     "**/.pytest_cache": true,
     "**/.mypy_cache": true,
-    "**/node_modules": true,
+    "**/node_modules": false,
     "**/dist": true,
     "**/.venv": true
   },
@@ -75,5 +74,6 @@
   "files.associations": {
     "*.css": "css",
     "*.json": "jsonc"
-  }
+  },
+  "python-envs.pythonProjects": []
 }

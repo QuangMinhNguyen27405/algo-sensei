@@ -1,165 +1,146 @@
 """Service layer for agent-related operations."""
 import json
+from typing import List, Optional, AsyncGenerator
 from google.adk.sessions import InMemorySessionService
-from google.adk.agents.llm_agent import Agent
 from google.adk import Runner
 from google.genai.types import Content, Part
+
+from app.agents.schemas import ChatMessage
 
 
 class AgentService:
     """Service for handling LeetCode analysis using AI agents."""
     
-    def __init__(self, runner: Runner, complexity_analyzer: Agent, hint_agent: Agent, session_service: InMemorySessionService):
+    def __init__(self, runner: Runner, session_service: InMemorySessionService):
         """Initialize the AgentService with required dependencies.
         
         Args:
             runner: The Runner instance for executing agents
-            complexity_analyzer: Agent for analyzing code complexity
-            hint_agent: Agent for providing hints
             session_service: Shared session service for maintaining tab sessions
         """
         self.runner = runner
-        self.complexity_analyzer = complexity_analyzer
-        self.hint_agent = hint_agent
         self.session_service = session_service
-        
-    async def provide_hints(self, user_id: str, session_id: str, problem_description: str, code: str, language: str) -> str:
-        """
-        Provide hints and guidance for solving a LeetCode problem.
-        
-        Args:
-            problem_description: The problem statement and requirements
-            code: The user's current code attempt
-            language: The programming language being used
-            session_id: Unique session ID from the frontend tab (maintains conversation history)
-            
-        Returns:
-            Hints and guidance without giving away the complete solution
-        """
-        user_session = user_id + "_" + session_id
-        
-        prompt = f"""
-            The user is working on the following problem:
-
-            {problem_description}
-
-            Their current code in {language}:
-            ```{language}
-            {code}
-            ```
-
-            Provide helpful hints and guidance:
-            1. Analyze their current approach
-            2. Suggest data structures or algorithms that might help
-            3. Point out common pitfalls or edge cases
-            4. Give hints without revealing the complete solution
-            5. Be encouraging and educational
-
-            Remember to guide them to discover the solution themselves.
-        """
-        self.runner.agent = self.hint_agent
-        
-        # Create Content object from prompt
-        message_content = Content(
-            parts=[Part(text=prompt)],
-            role="user"
-        )
-        
-        result_text = ""
-        
-        # Create session if it doesn't exist
-        try:
-            await self.session_service.create_session(
-                app_name="algo_sensei",
-                user_id="leetcode_user",
-                session_id=user_session
-            )
-        except Exception:
-            # Throw exception if session already exists
-            pass
-        
-        for event in self.runner.run(
-            user_id="leetcode_user",
-            session_id=user_session,
-            new_message=message_content
-        ):
-            # Collect the final response text
-            if hasattr(event, 'content') and event.content:
-                if isinstance(event.content, str):
-                    result_text = event.content
-                elif hasattr(event.content, 'parts') and event.content.parts:
-                    # Extract text from Content object
-                    for part in event.content.parts:
-                        if hasattr(part, 'text') and part.text:
-                            result_text += part.text
-        
-        return result_text or "No response generated"
     
-    async def analyze_complexity(self, user_id: str, session_id: str, problem_description: str, code: str, language: str) -> str:
+    def _extract_message_text(self, message: ChatMessage) -> str:
+        """Extract text content from a message."""
+        if message.content:
+            return message.content
+        if message.parts:
+            return " ".join(
+                part.text for part in message.parts 
+                if part.type == "text" and part.text
+            )
+        return ""
+    
+    async def stream_chat(
+        self, 
+        user_id: str,
+        session_id: str,
+        messages: List[ChatMessage],
+        code: Optional[str] = None,
+        language: Optional[str] = None,
+        problem_description: Optional[str] = None
+    ) -> AsyncGenerator[str, None]:
         """
-        Analyze the time and space complexity of the given code.
+        Stream chat responses compatible with AI SDK UI Message Stream format.
         
         Args:
-            code: The source code to analyze
-            language: The programming language of the code
-            session_id: Unique session ID from the frontend tab (maintains conversation history)
+            messages: List of chat messages
+            code: Optional code context from the editor
+            language: Optional programming language
+            problem_description: Optional problem description
             
-        Returns:
-            Analysis result with time/space complexity and explanations
-        """
-        user_session = user_id + "_" + session_id
-        
-        prompt = f"""
-            The user is working on the following problem:
-            {problem_description}
-            
-            Analyze the following {language} code and provide:
-            1. Time Complexity (Big O notation)
-            2. Space Complexity (Big O notation)
-            3. Detailed explanation of why the code has this complexity
-            4. Any bottlenecks or inefficient operations
-            5. Optimization suggestions if applicable
-
-            Code:
-            ```
-            {code}
-            ```
+        Yields:
+            Streaming response chunks in AI SDK format
         """
         
-        self.runner.agent = self.complexity_analyzer
+        if not messages:
+            yield 'e:{"error":"No messages provided"}\n'
+            return
+        
+        # Get the last user message
+        last_message = None
+        for msg in reversed(messages):
+            if msg.role == "user":
+                last_message = self._extract_message_text(msg)
+                break
+        
+        if not last_message:
+            yield 'e:{"error":"No user message found"}\n'
+            return
+        
+        context_parts = []
+        
+        if problem_description:
+            context_parts.append(f"Problem Description:\n{problem_description}")
+        
+        if code and language:
+            context_parts.append(f"Current code in {language}:\n```{language}\n{code}\n```")
+        elif code:
+            context_parts.append(f"Current code:\n```\n{code}\n```")
+        
+        context = "\n\n".join(context_parts) if context_parts else ""
+        prompt = f"{context}\n\nUser: {last_message}" if context else last_message
+        
+        try:
+            await self.session_service.create_session(
+                app_name="algo_sensei",
+                user_id=user_id,
+                session_id=session_id
+            )
+        except Exception:
+            # Session might already exist
+            pass
         
         message_content = Content(
             parts=[Part(text=prompt)],
             role="user"
         )
         
-        result_text = ""
-        
-        # Create session if it doesn't exist
         try:
-            await self.session_service.create_session(
-                app_name="algo_sensei",
-                user_id="leetcode_user",
-                session_id=user_session,
-            )
-        except Exception:
-            # Throw exception if session already exists
-            pass
-        
-        for event in self.runner.run(
-            user_id="leetcode_user",
-            session_id=user_session,
-            new_message=message_content
-        ):
-            # Collect the final response text
-            if hasattr(event, 'content') and event.content:
-                if isinstance(event.content, str):
-                    result_text = event.content
-                elif hasattr(event.content, 'parts') and event.content.parts:
-                    # Extract text from Content object
-                    for part in event.content.parts:
-                        if hasattr(part, 'text') and part.text:
-                            result_text += part.text
-        
-        return result_text or "No response generated"
-
+            has_content = False
+            print(f"Starting Google ADK runner for session: {session_id}")
+            
+            for event in self.runner.run(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=message_content
+            ):
+                print(f"Event received: {type(event)}, {event}")
+                
+                # Stream tokens immediately as they arrive
+                if hasattr(event, 'content') and event.content:
+                    content = event.content
+                    print(f"Event has content: {type(content)}")
+                    
+                    if isinstance(content, str) and content:
+                        has_content = True
+                        # Stream immediately (AI SDK format: text deltas with 0: prefix)
+                        chunk = f'0:{json.dumps(content)}\n'
+                        print(f"Streaming chunk: {chunk.strip()}")
+                        yield chunk
+                    elif hasattr(content, 'parts') and content.parts:
+                        for part in content.parts:
+                            if hasattr(part, 'text') and part.text:
+                                has_content = True
+                                # Stream immediately
+                                chunk = f'0:{json.dumps(part.text)}\n'
+                                print(f"Streaming chunk: {chunk.strip()}")
+                                yield chunk
+            
+            if not has_content:
+                print("WARNING: No response text streamed from Google ADK!")
+                yield 'e:{"error":"No response generated from AI"}\n'
+                return
+            
+            # Send finish message
+            yield 'd:{"finishReason":"stop"}\n'
+            print("Streaming completed successfully")
+                
+        except Exception as e:
+            print(f"ERROR in stream_chat: {e}")
+            import traceback
+            traceback.print_exc()
+            yield f'e:{json.dumps({"error": str(e)})}\n'
+            
+    

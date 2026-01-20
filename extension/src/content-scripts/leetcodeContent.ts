@@ -46,10 +46,20 @@ function getConsoleData() {
   return results;
 }
 
+function getProblemAndCode() {
+  const problemDescription = getProblem();
+  const userCodeData = getUserCode();
+
+  return {
+    problemDescription: problemDescription,
+    code: userCodeData.code,
+    language: userCodeData.language,
+  };
+}
+
 function getProblem() {
   let collectedData = [];
 
-  // Gets the problem description, examples, and constraints
   const examples = document.getElementsByClassName("elfjS")[0];
   if (examples && examples.children) {
     collectedData.push(
@@ -61,7 +71,6 @@ function getProblem() {
     });
   }
 
-  // Get the function definition and users code from the code editor
   const codeEditor = document.getElementsByClassName("view-line");
   if (codeEditor) {
     collectedData.push("\n--- Function Definition and Current Code ---\n");
@@ -93,11 +102,11 @@ function getProblem() {
     }
   }
 
-  return collectedData;
+  const problemDescription = collectedData.join("\n");
+  return problemDescription;
 }
 
 function getUserCode() {
-  // Get the programming language from the language selector
   let languageSelect: HTMLElement | null = null;
 
   const editorHeader = document.querySelector("#editor > div:first-child");
@@ -107,7 +116,6 @@ function getUserCode() {
 
   const language = languageSelect ? languageSelect.innerText.trim() : "";
 
-  // Get the code from the code editor
   const codeEditor = document.querySelector('[data-track-load="code_editor"]');
   if (!codeEditor) {
     return {
@@ -122,15 +130,11 @@ function getUserCode() {
     return {
       code: "",
       language: language,
-      error: "Code lines not found",
     };
   }
 
-  // Extract text from each view-line, excluding line numbers
   const lines = viewLines.querySelectorAll(".view-line");
   const codeLines: string[] = [];
-
-  console.log(lines);
 
   lines.forEach((line) => {
     const text =
@@ -148,13 +152,9 @@ function getUserCode() {
   };
 }
 
-// On get user code request, read & send the code as a response
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-  if (request.type === "getProblem") {
-    sendResponse({ data: getProblem() });
-  }
-  if (request.type === "getCodeComplexity") {
-    sendResponse({ data: getUserCode() });
+  if (request.type === "getProblemAndCode") {
+    sendResponse({ data: getProblemAndCode() });
   }
 });
 

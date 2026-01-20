@@ -1,21 +1,24 @@
 from pydantic import BaseModel
+from typing import List, Optional, Any
 
-class HintRequestSchema(BaseModel):
+class MessagePart(BaseModel):
+    type: str
+    text: Optional[str] = None
+
+class ChatMessage(BaseModel):
+    id: str
+    role: str
+    content: Optional[str] = None
+    parts: Optional[List[MessagePart]] = None
+
+class ChatRequestSchema(BaseModel):
     user_id: str
     session_id: str
-    problem_description: str
-    language: str
-    code: str
+    messages: List[ChatMessage]
+    code: Optional[str] = None
+    language: Optional[str] = None
+    problem_description: Optional[str] = None
     
-class CodeAnalysisRequestSchema(BaseModel):
-    user_id: str
-    session_id: str
-    problem_description: str
-    language: str
-    code: str
-    
-class HintResponseSchema(BaseModel):
-    hints: str
-    
-class CodeAnalysisResponseSchema(BaseModel):
-    analysis: str
+class ChatResponseSchema(BaseModel):
+    response: str
+

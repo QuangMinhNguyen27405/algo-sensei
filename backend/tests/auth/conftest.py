@@ -16,7 +16,7 @@ from app.auth.dependency import get_auth_service, get_current_user_id
 
 class FakeAuthService:
     async def get_user_by_id(self, user_id: int):
-        return {"id": user_id, "username": "testuser", "email": "test@example.com"}
+        return {"id": user_id, "username": "testuser", "email": "test@example.com", "is_active": True}
 
     async def login_with_email_and_password(self, user_data):
         # Simulate successful login
@@ -24,16 +24,16 @@ class FakeAuthService:
 
     async def register_user(self, user_data):
         # Simulate successful registration
-        return {"id": 1, "username": user_data.username, "email": user_data.email}
+        return {"id": 1, "username": user_data.username, "email": user_data.email, "is_active": True}
 
     async def logout_user(self, user_id: int):
         return None
 
     async def change_password(self, user_id: int, change_password_data):
-        return {"id": user_id, "username": "testuser"}
+        return {"id": user_id, "username": "testuser", "email": "test@example.com", "is_active": True}
 
     async def delete_user(self, user_id: int):
-        return {"id": user_id, "deleted": True}
+        return {"id": user_id, "username": "testuser", "email": "test@example.com", "is_active": False}
 
 
 def create_test_app():
