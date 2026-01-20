@@ -1,5 +1,6 @@
 import jwt
 import pytest
+from unittest.mock import AsyncMock, patch
 
 from types import SimpleNamespace
 
@@ -52,12 +53,12 @@ async def test_login_with_email_success_verifies_password():
     # Create service with fake repo
     svc = AuthService(settings, FakeRepo(user=user))  # type: ignore
 
-    # Build request-like object
-    req = SimpleNamespace(email="u@example.com", username=None, password="secret")
+    # Mock the create_access_token method
+    with patch.object(svc, "create_access_token", return_value="test-token"):
+        # Call the method with keyword arguments
+        result = await svc.login_with_email_and_password(email="u@example.com", username=None, password="secret")
 
-    result = await svc.login_with_email_and_password(req)  # type: ignore
-    assert result["token_type"] == "bearer"
-    assert "access_token" in result
+    assert result["access_token"] == "test-token"
 
 
 @pytest.mark.asyncio
@@ -68,10 +69,8 @@ async def test_login_with_both_mismatch_raises_unauthorized():
 
     svc = AuthService(settings, FakeRepo(user=user1, user2=user2))  # type: ignore
 
-    req = SimpleNamespace(email="a@example.com", username="b", password="p1")
-
     with pytest.raises(UnauthorizedException):
-        await svc.login_with_email_and_password(req)  # type: ignore
+        await svc.login_with_email_and_password(email="a@example.com", username="b", password="p1")
 
 
 @pytest.mark.asyncio
@@ -91,5 +90,5 @@ async def test_change_password_updates_hash_and_hides_password():
 
     change_req = SimpleNamespace(old_password="old", new_password="new")
 
-    updated = await svc.change_password(5, change_req)  # type: ignore
+    updated = await svc.change_password(5, change_req.old_password, change_req.new_password)  # type: ignore
     assert updated.id == 5

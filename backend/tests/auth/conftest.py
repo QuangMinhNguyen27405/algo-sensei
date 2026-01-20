@@ -11,25 +11,29 @@ from fastapi.testclient import TestClient
 import pytest
 
 from app.auth.router import router as auth_router
-from app.auth.dependency import get_auth_service, get_current_user_id
+from app.auth.dependency import get_auth_service, authenticate_current_user
+from app.utils.exceptions import UnauthorizedException
 
 
 class FakeAuthService:
     async def get_user_by_id(self, user_id: int):
         return {"id": user_id, "username": "testuser", "email": "test@example.com", "is_active": True}
 
-    async def login_with_email_and_password(self, user_data):
+    async def login_with_email_and_password(self, username: str | None, email: str | None, password: str):
         # Simulate successful login
-        return {"access_token": "test-token", "token_type": "bearer"}
+        if password == "correct-password":
+            return {"access_token": "test-token", "token_type": "bearer"}
+        raise UnauthorizedException("Invalid credentials")
 
-    async def register_user(self, user_data):
+    async def register_user(self, username: str, email: str, password: str):
         # Simulate successful registration
-        return {"id": 1, "username": user_data.username, "email": user_data.email, "is_active": True}
+        return {"id": 1, "username": username, "email": email, "is_active": True}
 
     async def logout_user(self, user_id: int):
         return None
 
-    async def change_password(self, user_id: int, change_password_data):
+    async def change_password(self, user_id: int, old_password: str, new_password: str):
+        # Simulate successful password change
         return {"id": user_id, "username": "testuser", "email": "test@example.com", "is_active": True}
 
     async def delete_user(self, user_id: int):
@@ -43,7 +47,7 @@ def create_test_app():
 
     # Override dependencies with test fakes
     app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
-    app.dependency_overrides[get_current_user_id] = lambda: 1
+    app.dependency_overrides[authenticate_current_user] = lambda: 1
 
     return app
 

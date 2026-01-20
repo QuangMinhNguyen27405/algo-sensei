@@ -1,13 +1,14 @@
 """Repository for authentication-related database operations."""
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from typing import Any
 from app.auth.user import User
 
 class AuthRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_user(self, username, email, hashed_password):
+    def create_user(self, username: str, email: str, hashed_password: str):
         new_user = User(username=username, email=email, password=hashed_password)
         try:
             self.db.add(new_user)
@@ -27,7 +28,7 @@ class AuthRepository:
     def get_user_by_email(self, email: str):
         return self.db.query(User).filter(User.email == email, User.is_active).first()
     
-    def update_user(self, user_id: int, **kwargs):
+    def update_user(self, user_id: int, **kwargs: Any):
         user = self.get_user_by_id(user_id)
         if not user:
             return None

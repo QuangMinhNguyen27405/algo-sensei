@@ -20,6 +20,11 @@ def get_auth_service(settings: Annotated[Settings, Depends(get_settings)], authR
     authService = AuthService(settings, authRepository)
     return authService
 
+async def authenticate_current_user(token: Annotated[str, Depends(oauth2_scheme)], auth_service: Annotated[AuthService, Depends(get_auth_service)]) -> int:
+    """Dependency to authenticate user from token and get user_id."""
+    user_id = await auth_service.authenticate_user(token)
+    return user_id
+
 def get_current_user_id(request: Request) -> int:
     """Dependency to get current user_id from middleware."""
     user_id = getattr(request.state, "user_id", None)

@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from fastapi.requests import Request
 from app.config.database import engine, Base
 from app.middlewares.cors import setup_cors
-from app.middlewares.authentication import AuthenticationMiddleware
 from app.auth.router import router as auth_router
 from app.agents.router import router as agent_router
 
@@ -40,7 +39,6 @@ app = FastAPI(
 
 # Global Middleware
 setup_cors(app)
-app.add_middleware(AuthenticationMiddleware)
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):

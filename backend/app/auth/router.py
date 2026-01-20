@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, status
 
 from app.auth.service import AuthService 
 from app.auth.schemas import UserCreateRequestSchema, UserLoginRequestSchema, UserChangePasswordRequestSchema, UserResponseSchema
-from app.auth.dependency import get_auth_service, get_current_user_id
+from app.auth.dependency import get_auth_service, authenticate_current_user
 
 router = APIRouter(
     prefix="/users", 
@@ -14,7 +14,7 @@ router = APIRouter(
 
 @router.get("/me", status_code=status.HTTP_200_OK)
 async def get_current_user(
-    user_id: Annotated[int, Depends(get_current_user_id)],
+    user_id: Annotated[int, Depends(authenticate_current_user)],
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> UserResponseSchema:
     """
@@ -30,7 +30,7 @@ async def login_with_email_and_password(
     """
     Authenticate user and return access token.
     """
-    return await auth_service.login_with_email_and_password(user_data)
+    return await auth_service.login_with_email_and_password(username=user_data.username, email=user_data.email, password=user_data.password)
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(
@@ -40,11 +40,11 @@ async def register_user(
     """
     Register a new user account.
     """
-    return await auth_service.register_user(user_data)
+    return await auth_service.register_user(user_data.username, user_data.email, user_data.password)
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout_user(
-    user_id: Annotated[int, Depends(get_current_user_id)],
+    user_id: Annotated[int, Depends(authenticate_current_user)],
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ):
     """
@@ -56,17 +56,17 @@ async def logout_user(
 @router.put("/change-password", status_code=status.HTTP_200_OK)
 async def change_password(
     change_password_data: UserChangePasswordRequestSchema,
-    user_id: Annotated[int, Depends(get_current_user_id)],
+    user_id: Annotated[int, Depends(authenticate_current_user)],
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> UserResponseSchema:
     """
     Change password for the current user.
     """
-    return await auth_service.change_password(user_id, change_password_data)
+    return await auth_service.change_password(user_id, change_password_data.old_password, change_password_data.new_password)
 
 @router.delete("/delete", status_code=status.HTTP_200_OK)
 async def delete_account(
-    user_id: Annotated[int, Depends(get_current_user_id)],
+    user_id: Annotated[int, Depends(authenticate_current_user)],
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> UserResponseSchema:
     """
