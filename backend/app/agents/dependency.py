@@ -1,6 +1,5 @@
 """Dependency injection for agent services."""
 from google.adk.sessions import InMemorySessionService
-
 from app.agents.agent import create_runner, root_agent
 from app.agents.service import AgentService
 

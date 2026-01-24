@@ -15,10 +15,10 @@ class ChatRequestSchema(BaseModel):
     user_id: str
     session_id: str
     messages: List[ChatMessage]
-    code: Optional[str] = None
-    language: Optional[str] = None
-    problem_description: Optional[str] = None
-    
+    code: str
+    language: str
+    problem_description: str
+
 class ChatResponseSchema(BaseModel):
     response: str
 

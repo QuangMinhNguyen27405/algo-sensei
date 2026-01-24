@@ -92,3 +92,26 @@ async def test_change_password_updates_hash_and_hides_password():
 
     updated = await svc.change_password(5, change_req.old_password, change_req.new_password)  # type: ignore
     assert updated.id == 5
+
+
+@pytest.mark.asyncio
+async def test_logout_user_success():
+    user = SimpleNamespace(id=1, is_active=True)
+    svc = AuthService(settings, FakeRepo(user=user))  # type: ignore
+    result = await svc.logout_user(1)
+    assert result["message"] == "User logged out successfully"
+
+
+@pytest.mark.asyncio
+async def test_logout_user_not_found():
+    svc = AuthService(settings, FakeRepo(user=None))  # type: ignore
+    with pytest.raises(UnauthorizedException):
+        await svc.logout_user(999)
+
+
+@pytest.mark.asyncio
+async def test_delete_user_success():
+    # FakeRepo.delete_user returns SimpleNamespace(id=..., deleted=True)
+    svc = AuthService(settings, FakeRepo())  # type: ignore
+    result = await svc.delete_user(1)
+    assert result.deleted is True

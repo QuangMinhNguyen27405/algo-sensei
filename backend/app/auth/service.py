@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
-from app.auth.user import User
+from app.auth.models import User
 from app.config.settings import Settings, settings
 from app.utils.exceptions import AlreadyExistsException, UnauthorizedException, InternalServerException
 from app.auth.schemas import UserCreateRequestSchema, UserLoginRequestSchema, UserChangePasswordRequestSchema
@@ -72,7 +72,11 @@ class AuthService:
         return user
     
     async def logout_user(self, user_id: int):
-        pass
+        user = self.authRepository.get_user_by_id(user_id)
+        if not user:
+            raise UnauthorizedException("User not found")
+        
+        return {"message": "User logged out successfully"}
     
     async def change_password(self, user_id: int, old_password: str, new_password: str):
         user = self.authRepository.get_user_by_id(user_id)

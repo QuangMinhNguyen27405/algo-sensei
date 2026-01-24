@@ -70,6 +70,13 @@ def test_change_password_success(make_client):
     assert body["id"] == 1
 
 
+def test_logout_success(make_client):
+    client = make_client({get_current_user_id: lambda: 1})
+    resp = client.post("/users/logout")
+    assert resp.status_code == 204
+    assert resp.content == b""
+
+
 def test_delete_account_success(make_client):
     client = make_client({get_current_user_id: lambda: 1})
 

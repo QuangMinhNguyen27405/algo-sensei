@@ -44,7 +44,7 @@ export const Chat = () => {
   const transport = useMemo(
     () =>
       new AssistantChatTransport({
-        api: `${EnvConfig.get().VITE_API_URL}/agent/chat-test`,
+        api: `${EnvConfig.get().VITE_API_URL}/agent/chat`,
         credentials: "omit",
         headers: {
           "Content-Type": "application/json",
