@@ -7,14 +7,12 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
   }
 
   if (message.type === "GET_PAGE_TEXT") {
-    // Get just the text content
     const text = document.body.innerText;
     sendResponse({ text });
     return true;
   }
 
   if (message.type === "GET_PAGE_INFO") {
-    // Get page metadata
     const info = {
       title: document.title,
       url: window.location.href,

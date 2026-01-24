@@ -15,7 +15,7 @@ def setup_cors(app: FastAPI):
     if settings.debug:
         allow_origins = ["*"]
     else:
-        allow_origins = [settings.frontend_url] if settings.frontend_url else []
+        allow_origins = [settings.extension_url] if settings.extension_url else []
         
     app.add_middleware(
         CORSMiddleware,
@@ -23,4 +23,5 @@ def setup_cors(app: FastAPI):
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-Vercel-AI-Data-Stream"],
     )

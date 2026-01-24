@@ -15,3 +15,7 @@ class NotFoundException(HTTPException):
 class AlreadyExistsException(HTTPException):
     def __init__(self, detail: str = "Resource Already Exists"):
         super().__init__(status_code=409, detail=detail)
+        
+class InternalServerException(HTTPException):
+    def __init__(self, detail: str = "Internal Server Error"):
+        super().__init__(status_code=500, detail=detail)

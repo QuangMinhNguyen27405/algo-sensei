@@ -31,7 +31,7 @@ const DEFAULT_SYSTEM: SystemSettings = {
 };
 
 const DEFAULT_UI: UISettings = {
-  activeTab: "home",
+  activeTab: "chat",
 };
 
 export function useSettings() {

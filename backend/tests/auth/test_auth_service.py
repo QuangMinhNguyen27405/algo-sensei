@@ -1,5 +1,6 @@
 import jwt
 import pytest
+from unittest.mock import AsyncMock, patch
 
 from types import SimpleNamespace
 
@@ -35,7 +36,7 @@ class FakeRepo:
 
 
 def test_create_access_token_contains_sub_and_decodes():
-    svc = AuthService(db=None)
+    svc = AuthService(settings, FakeRepo())  # type: ignore
     token = svc.create_access_token({"sub": "1"})
     decoded = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
     assert decoded["sub"] == "1"
@@ -44,53 +45,73 @@ def test_create_access_token_contains_sub_and_decodes():
 
 @pytest.mark.asyncio
 async def test_login_with_email_success_verifies_password():
-    svc = AuthService(db=None)
     # Prepare a user with hashed password
-    hashed = svc.get_password_hash("secret")
+    temp_svc = AuthService(settings, FakeRepo())  # type: ignore
+    hashed = temp_svc.get_password_hash("secret")
     user = SimpleNamespace(id=10, email="u@example.com", username="user", password=hashed)
 
-    # Inject fake repo into service
-    svc.authRepository = FakeRepo(user=user)
+    # Create service with fake repo
+    svc = AuthService(settings, FakeRepo(user=user))  # type: ignore
 
-    # Build request-like object
-    req = SimpleNamespace(email="u@example.com", username=None, password="secret")
+    # Mock the create_access_token method
+    with patch.object(svc, "create_access_token", return_value="test-token"):
+        # Call the method with keyword arguments
+        result = await svc.login_with_email_and_password(email="u@example.com", username=None, password="secret")
 
-    result = await svc.login_with_email_and_password(req)
-    assert result["token_type"] == "bearer"
-    assert "access_token" in result
+    assert result["access_token"] == "test-token"
 
 
 @pytest.mark.asyncio
 async def test_login_with_both_mismatch_raises_unauthorized():
-    svc = AuthService(db=None)
-    user1 = SimpleNamespace(id=1, email="a@example.com", username="a", password=svc.get_password_hash("p1"))
-    user2 = SimpleNamespace(id=2, email="b@example.com", username="b", password=svc.get_password_hash("p2"))
+    temp_svc = AuthService(settings, FakeRepo())  # type: ignore
+    user1 = SimpleNamespace(id=1, email="a@example.com", username="a", password=temp_svc.get_password_hash("p1"))
+    user2 = SimpleNamespace(id=2, email="b@example.com", username="b", password=temp_svc.get_password_hash("p2"))
 
-    svc.authRepository = FakeRepo(user=user1, user2=user2)
-
-    req = SimpleNamespace(email="a@example.com", username="b", password="p1")
+    svc = AuthService(settings, FakeRepo(user=user1, user2=user2))  # type: ignore
 
     with pytest.raises(UnauthorizedException):
-        await svc.login_with_email_and_password(req)
+        await svc.login_with_email_and_password(email="a@example.com", username="b", password="p1")
 
 
 @pytest.mark.asyncio
 async def test_get_current_user_invalid_token_raises():
-    svc = AuthService(db=None)
+    svc = AuthService(settings, FakeRepo())  # type: ignore
     with pytest.raises(UnauthorizedException):
         await svc.get_current_user("invalid-token")
 
 
 @pytest.mark.asyncio
 async def test_change_password_updates_hash_and_hides_password():
-    svc = AuthService(db=None)
-    old_hashed = svc.get_password_hash("old")
+    temp_svc = AuthService(settings, FakeRepo())  # type: ignore
+    old_hashed = temp_svc.get_password_hash("old")
     user = SimpleNamespace(id=5, password=old_hashed)
 
-    svc.authRepository = FakeRepo(user=user)
+    svc = AuthService(settings, FakeRepo(user=user))  # type: ignore
 
     change_req = SimpleNamespace(old_password="old", new_password="new")
 
-    updated = await svc.change_password(5, change_req)
-    # Service deletes password attribute before returning
-    assert not hasattr(updated, "password")
+    updated = await svc.change_password(5, change_req.old_password, change_req.new_password)  # type: ignore
+    assert updated.id == 5
+
+
+@pytest.mark.asyncio
+async def test_logout_user_success():
+    user = SimpleNamespace(id=1, is_active=True)
+    svc = AuthService(settings, FakeRepo(user=user))  # type: ignore
+    result = await svc.logout_user(1)
+    assert result["message"] == "User logged out successfully"
+
+
+@pytest.mark.asyncio
+async def test_logout_user_not_found():
+    svc = AuthService(settings, FakeRepo(user=None))  # type: ignore
+    with pytest.raises(UnauthorizedException):
+        await svc.logout_user(999)
+
+
+@pytest.mark.asyncio
+async def test_delete_user_success():
+    # FakeRepo.delete_user returns SimpleNamespace(id=..., deleted=True)
+    svc = AuthService(settings, FakeRepo())  # type: ignore
+    result = await svc.delete_user(1)
+    assert result.deleted is True

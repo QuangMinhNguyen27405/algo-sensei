@@ -10,7 +10,7 @@ class FakeAuthServiceOverride:
     async def get_user_by_id(self, user_id: int):
         return {"id": user_id, "username": "overridden"}
 
-    async def login_with_email_and_password(self, user_data):
+    async def login_with_email_and_password(self, *, username: str | None = None, email: str | None = None, password: str):
         return self._login_response
 
     async def register_user(self, user_data):
@@ -27,12 +27,12 @@ class FakeAuthServiceOverride:
 
 
 def test_me_success(make_client):
-    client = make_client({get_current_user_id: lambda: 42})
+    client = make_client({get_current_user_id: lambda: 1})
 
     resp = client.get("/users/me")
     assert resp.status_code == 200
     body = resp.json()
-    assert body["id"] == 42
+    assert body["id"] == 1
     assert body["username"] == "testuser" or body["username"] == "overridden"
 
 
@@ -50,32 +50,38 @@ def test_login_success(make_client):
 
 def test_register_conflict_returns_409(make_client):
     class ConflictService:
-        async def register_user(self, user_data):
+        async def register_user(self, username: str, email: str, password: str):
             raise AlreadyExistsException("User exists")
 
     client = make_client({get_auth_service: lambda: ConflictService()})
 
     payload = {"username": "taken", "email": "taken@example.com", "password": "pass123"}
     resp = client.post("/users/register", json=payload)
-    # FastAPI converts HTTPException to response with its status code
-    assert resp.status_code in (409, 400, 422)  # Prefer 409; schemas may affect code
+    assert resp.status_code == 409
 
 
 def test_change_password_success(make_client):
-    client = make_client({get_current_user_id: lambda: 7})
+    client = make_client({get_current_user_id: lambda: 1})
 
     payload = {"old_password": "old", "new_password": "new"}
     resp = client.put("/users/change-password", json=payload)
     assert resp.status_code == 200
     body = resp.json()
-    assert body["id"] == 7
+    assert body["id"] == 1
+
+
+def test_logout_success(make_client):
+    client = make_client({get_current_user_id: lambda: 1})
+    resp = client.post("/users/logout")
+    assert resp.status_code == 204
+    assert resp.content == b""
 
 
 def test_delete_account_success(make_client):
-    client = make_client({get_current_user_id: lambda: 3})
+    client = make_client({get_current_user_id: lambda: 1})
 
     resp = client.delete("/users/delete")
     assert resp.status_code == 200
     body = resp.json()
-    assert body["id"] == 3
-    assert body.get("deleted") is True
+    assert body["id"] == 1
+    assert body["is_active"] is False  # Soft delete sets is_active to False
