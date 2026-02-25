@@ -1,5 +1,6 @@
 import { TabToggle } from "@/components/sidepanel/tabToggle";
 import { Chat } from "@/components/sidepanel/tabs/chat";
+import { Problems } from "@/components/sidepanel/tabs/problems";
 import { Profile } from "@/components/sidepanel/tabs/profile";
 import { Settings } from "@/components/sidepanel/tabs/settings";
 import { Tabs } from "@/components/ui/tabs";
@@ -28,10 +29,12 @@ const App = () => {
         <Tabs
           value={ui.activeTab}
           onValueChange={handleTabChange}
-          className="h-full flex flex-col gap-0">
+          className="h-full flex flex-col gap-0"
+        >
           <TabToggle />
 
           <Chat />
+          <Problems />
           <Profile />
           <Settings />
         </Tabs>
