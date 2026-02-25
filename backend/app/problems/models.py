@@ -101,6 +101,9 @@ class UserProblem(Base):
     problem_id: Mapped[int] = mapped_column(index=True)
     status: Mapped[ProblemStatus] = mapped_column(Enum(ProblemStatus), nullable=False, default=ProblemStatus.NOT_STARTED)
     user_code: Mapped[str] = mapped_column(String, nullable=True)
+    notes: Mapped[str] = mapped_column(String, nullable=True)
+    attempts: Mapped[int] = mapped_column(default=0)
+    time_spent_seconds: Mapped[int] = mapped_column(default=0)
     completion_date: Mapped[str] = mapped_column(String, nullable=True)
     
     def __repr__(self) -> str:

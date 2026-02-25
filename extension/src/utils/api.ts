@@ -13,10 +13,10 @@ interface RequestBaseArgs<T> {
   method: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
   url: string;
   data?: object;
-  schema: { parse: (data: object) => T };
+  schema: { parse: (data: unknown) => T };
 }
 
-// Define an interface that defines 2 overloads for the request function
+// Define an interface that defines overloads for the request function
 interface IRequest {
   <T extends { data: object }>(
     args: RequestBaseArgs<T> & {
@@ -24,7 +24,7 @@ interface IRequest {
     },
   ): Promise<T["data"]>;
 
-  <T extends { data: object }>(
+  <T>(
     args: RequestBaseArgs<T> & {
       options?: {
         includeOnlyDataField?: false | undefined;
@@ -49,7 +49,7 @@ api.interceptors.response.use(
   },
 );
 
-export const request: IRequest = async <T extends { data: object }>({
+export const request: IRequest = async <T>({
   method,
   url,
   data = {},
@@ -59,9 +59,10 @@ export const request: IRequest = async <T extends { data: object }>({
   method: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
   url: string;
   data?: object;
-  schema: { parse: (data: object) => T };
+  schema: { parse: (data: unknown) => T };
   options?: { includeOnlyDataField?: boolean; requireAuth?: boolean };
-}): Promise<T["data"] | T> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}): Promise<any> => {
   const { includeOnlyDataField = false } = options;
   const response = await api.request({
     method,
@@ -76,5 +77,10 @@ export const request: IRequest = async <T extends { data: object }>({
   });
   const parsedData = schema.parse(response.data);
 
-  return includeOnlyDataField ? parsedData.data : parsedData;
+  return includeOnlyDataField &&
+    parsedData != null &&
+    typeof parsedData === "object" &&
+    "data" in parsedData
+    ? (parsedData as { data: unknown }).data
+    : parsedData;
 };

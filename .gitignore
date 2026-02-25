@@ -94,6 +94,7 @@ yarn.lock
 ########################
 .idea/
 *.iml
+.vscode/mcp.json
 
 ########################
 # OS Files
